@@ -1,0 +1,65 @@
+class Book:
+    books = []  
+    book_counter = 1  
+    
+    def __init__(self, title, author, year):
+        self.id = Book.book_counter
+        Book.book_counter += 1
+        self.title = title
+        self.author = author
+        self.year = year
+    
+    @classmethod
+    def create(cls, title, author, year):
+        book = cls(title, author, year)
+        cls.books.append(book)
+        return book
+    
+    @classmethod
+    def read(cls, book_id):
+        for book in cls.books:
+            if book.id == book_id:
+                return str(book) 
+        return None
+    
+    @classmethod
+    def update(cls, book_id, title=None, author=None, year=None):
+        for book in cls.books:
+            if book.id == book_id:
+                if title:
+                    book.title = title
+                if author:
+                    book.author = author
+                if year:
+                    book.year = year
+                return str(book)  
+        return None
+    
+    @classmethod
+    def delete(cls, book_id):
+        for book in cls.books:
+            if book.id == book_id:
+                cls.books.remove(book)
+                return True
+        return False
+    
+    @classmethod
+    def list_books(cls):
+        return "\n".join(str(book) for book in cls.books)  
+    
+    def __str__(self):
+       
+        return f"ID: {self.id}, Titel: {self.title}, Autor: {self.author}, Jahr: {self.year}"
+
+b1 = Book.create("Harry Potter und der Stein der Weisen", "J.K. Rowling", 1997)
+b2 = Book.create("Harry Potter und die Kammer des Schreckens", "J.K. Rowling", 1998)
+
+print(Book.list_books())  
+print(Book.read(1)) 
+Book.update(1, title="Harry Potter und der Gefangene von Askaban")  
+print(Book.list_books())  
+Book.delete(2) 
+print(Book.list_books())  
+
+b3 = Book.create("Harry Potter und der Feuerkelch", "J.K. Rowling", 2000)
+print(Book.list_books()) 
