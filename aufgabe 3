@@ -1,0 +1,122 @@
+from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+
+
+Base = declarative_base()
+
+
+class ProductTable(Base):
+    __tablename__ = 'products'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(255), nullable=True)
+    price = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return f"<Product(id={self.id}, name={self.name}, price={self.price})>"
+
+
+class DBConnection:
+    DATABASE_URL = 'sqlite:///products.db'  # SQLite-Verbindung (anpassen für andere DB)
+    engine = create_engine(DATABASE_URL, echo=True)
+    Session = sessionmaker(bind=engine)
+
+class ProductModel:
+    def __init__(self):
+        self.Session = DBConnection.Session  # Session aus der DB-Verbindung
+
+    def create(self, name: str, description: str, price: float):
+       
+        with self.Session() as session:
+            try:
+                new_product = ProductTable(name=name, description=description, price=price)
+                session.add(new_product)
+                session.commit()
+                return {"success": "Product created successfully", "id": new_product.id}
+            except SQLAlchemyError as e:
+                session.rollback()
+                return {"error": f"Database error: {str(e)}"}
+
+    def single(self, id: int):
+      
+        with self.Session() as session:
+            try:
+                product = session.query(ProductTable).filter_by(id=id).first()
+                if product:
+                    return {"id": product.id, "name": product.name, "description": product.description, "price": product.price}
+                return {"error": "Product not found"}
+            except SQLAlchemyError as e:
+                return {"error": f"Database error: {str(e)}"}
+
+    def list(self):
+       
+        with self.Session() as session:
+            try:
+                products = session.query(ProductTable).all()
+                return [{"id": product.id, "name": product.name, "description": product.description, "price": product.price} for product in products]
+            except SQLAlchemyError as e:
+                return {"error": f"Database error: {str(e)}"}
+
+    def update(self, id: int, name: str = None, description: str = None, price: float = None):
+       
+        with self.Session() as session:
+            try:
+                product = session.query(ProductTable).filter_by(id=id).first()
+                if not product:
+                    return {"error": "Product not found"}
+                
+                if name:
+                    product.name = name
+                if description:
+                    product.description = description
+                if price is not None:
+                    product.price = price
+                
+                session.commit()
+                return {"success": "Product updated successfully", "id": product.id}
+            except SQLAlchemyError as e:
+                session.rollback()
+                return {"error": f"Database error: {str(e)}"}
+
+    def delete(self, id: int):
+       
+        with self.Session() as session:
+            try:
+                product = session.query(ProductTable).filter_by(id=id).first()
+                if not product:
+                    return {"error": "Product not found"}
+
+                session.delete(product)
+                session.commit()
+                return {"success": "Product deleted successfully"}
+            except SQLAlchemyError as e:
+                session.rollback()
+                return {"error": f"Database error: {str(e)}"}
+
+
+if __name__ == "__main__":
+  
+    Base.metadata.create_all(DBConnection.engine)
+    product_model = ProductModel()
+
+ 
+    result_create = product_model.create(name="Laptop", description="High-end gaming laptop", price=1200.50)
+    print(result_create)
+
+  
+    result_single = product_model.single(id=1)
+    print(result_single)
+
+    result_list = product_model.list()
+    print(result_list)
+
+    result_update = product_model.update(id=1, name="Laptop Pro", price=1500.00)
+    print(result_update)
+
+
+    result_delete = product_model.delete(id=1)
+    print(result_delete)
+
